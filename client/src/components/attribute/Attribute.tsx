@@ -11,24 +11,19 @@ interface AttributeState {
 export class Attribute extends Component<AttributePropsType, AttributeState> {
   constructor(props: AttributePropsType) {
     super(props);
+
     this.state = {
-      selectedAttributes: props.selectedAttributes || {},
+      selectedAttributes: props.isSmall
+        ? props.selectedAttributes || {}
+        : props.isPDP
+          ? {}
+          : this.getDefaultAttributes(),
     };
   }
 
   componentDidMount() {
-    if (Object.keys(this.state.selectedAttributes).length === 0) {
-      const defaultAttributes: SelectedAttributesType = {};
-
-      this.props.attributes.forEach((attribute) => {
-        if (attribute.values?.length) {
-          defaultAttributes[attribute.name] = {
-            id: attribute.id,
-            value: attribute.values[0].value,
-          };
-        }
-      });
-
+    if (!this.props.isPDP && !this.props.isSmall && Object.keys(this.state.selectedAttributes).length === 0) {
+      const defaultAttributes = this.getDefaultAttributes();
       this.setState({ selectedAttributes: defaultAttributes });
 
       if (this.props.onSelect) {
@@ -39,61 +34,77 @@ export class Attribute extends Component<AttributePropsType, AttributeState> {
     }
   }
 
-  componentDidUpdate(prevProps: AttributePropsType) {
-    const prevSelected = prevProps.selectedAttributes || {};
-    const currentSelected = this.props.selectedAttributes || {};
+  getDefaultAttributes = (): SelectedAttributesType => {
+    const defaultAttributes: SelectedAttributesType = {};
+    this.props.attributes.forEach((attribute) => {
+      if (attribute.values?.length) {
+        defaultAttributes[attribute.name] = {
+          id: attribute.id,
+          value: attribute.values[0].value,
+        };
+      }
+    });
+    return defaultAttributes;
+  };
 
-    if (JSON.stringify(prevSelected) !== JSON.stringify(currentSelected)) {
-      this.setState({ selectedAttributes: currentSelected });
-    }
-  }
+  handleSelect = (attributeId: number, attributeName: string, value: string) => {
+    if (this.props.isSmall) return;
 
-  handleSelect = (attributeId: number, name: string, value: string) => {
-    const updatedAttributes = {
-      ...this.state.selectedAttributes,
-      [name]: { id: attributeId, value },
-    };
-
-    this.setState({ selectedAttributes: updatedAttributes });
-
-    if (this.props.onSelect) {
-      this.props.onSelect(attributeId, name, value);
-    }
+    this.setState(
+      (prevState) => ({
+        selectedAttributes: {
+          ...prevState.selectedAttributes,
+          [attributeName]: { id: attributeId, value },
+        },
+      }),
+      () => {
+        if (this.props.onSelect) {
+          this.props.onSelect(attributeId, attributeName, value);
+        }
+      }
+    );
   };
 
   render() {
     return (
       <>
         {this.props.attributes.map((attribute) => {
-          const kebabCaseAttributeName = attribute.name.replace(/\s+/g, '-').toLowerCase();
+          const kebabCaseAttributeName = attribute.name.replace(/\s+/g, "-").toLowerCase();
+
           const containerDataTestId = this.props.isSmall
             ? `cart-item-attribute-${kebabCaseAttributeName}`
             : `product-attribute-${kebabCaseAttributeName}`;
 
           return (
-            <div
-              key={attribute.id}
-              className={`attribute--wrapper ${this.props.isSmall ? "sm" : ""}`}
-              data-testid={containerDataTestId}
-            >
+            <div key={attribute.id} className={`attribute--wrapper ${this.props.isSmall ? "sm" : ""}`} data-testid={containerDataTestId}>
               <div className="attribute--name">{attribute.name}:</div>
               <div className="attribute--value_wrapper">
                 {attribute.values?.map((value) => {
-                  const kebabCaseValue = value.value.replace(/\s+/g, '-').toLowerCase();
-                  const isSelected = this.state.selectedAttributes[attribute.name]?.value === value.value;
+                  const formattedValue = value.value.startsWith("#")
+                    ? value.value.toUpperCase()
+                    : value.value.replace(/\s+/g, "-");
+
+                  const isSelected = this.props.isSmall
+                    ? this.props.selectedAttributes?.[attribute.name]?.value === value.value
+                    : this.state.selectedAttributes[attribute.name]?.value === value.value;
 
                   const optionDataTestId = this.props.isSmall
-                    ? `cart-item-attribute-${kebabCaseAttributeName}-${kebabCaseValue}${isSelected ? "-selected" : ""}`
-                    : '';
+                    ? `cart-item-attribute-${kebabCaseAttributeName}-${formattedValue}${isSelected ? "-selected" : ""}`
+                    : `product-attribute-${kebabCaseAttributeName}-${formattedValue}${isSelected ? "-selected" : ""}`;
 
                   return (
                     <div
                       key={value.value}
-                      className={`${attribute.type === "swatch" ? "attribute--swatch_value" : "attribute--text_value"} ${isSelected ? "active" : ""}`}
-                      onClick={() => this.props.isSmall ? {} : this.handleSelect(Number(attribute.id), attribute.name, value.value)}
+                      className={`${attribute.type === "swatch" ? "attribute--swatch_value" : "attribute--text_value"} ${isSelected ? "active" : ""
+                        }`}
+                      onClick={() => {
+                        if (!this.props.isSmall) {
+                          this.handleSelect(Number(attribute.id), attribute.name, value.value);
+                        }
+                      }}
                       data-testid={optionDataTestId}
                     >
-                      {attribute.type === 'swatch' && (<div style={{ background: value.value }} />)}
+                      {attribute.type === "swatch" && <div style={{ background: value.value }} />}
                       {attribute.type === "text" ? getSizeAbbreviation(value.display_value) : ""}
                     </div>
                   );

@@ -14,7 +14,10 @@ const loadCartFromStorage = (): CartType => {
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState: loadCartFromStorage(),
+  initialState: {
+    ...loadCartFromStorage(),
+    showCart:false
+  },
   reducers: {
     addToCart: (state, action: PayloadAction<CartItemType>) => {
 
@@ -87,10 +90,16 @@ const cartSlice = createSlice({
       state.totalItemCount = 0;
       state.totalPrice = 0;
     },
+    openCart: (state) => {
+      state.showCart = true;
+    },
+    closeCart: (state) => {
+      state.showCart = false
+    }
 
   },
 });
 
 
-export const { addToCart, removeFromCart, increaseQty, decreaseQty, clearCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, increaseQty, decreaseQty, clearCart, openCart, closeCart } = cartSlice.actions;
 export default cartSlice.reducer;

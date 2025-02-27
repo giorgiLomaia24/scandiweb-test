@@ -11,6 +11,7 @@ export interface ProductDetailsPropsType {
     addToCart: (item: CartItemType) => void;
     setPlaceOrder: (status: boolean) => void;
     setSelectedProduct: (product: ProductType) => void;
+    openCart: () => void;
     cartItems: CartItemType[];
     id: string;
 }
@@ -31,6 +32,7 @@ export interface AttributePropsType {
     attributes: AttributeType[];
     selectedAttributes?: SelectedAttributesType; 
     isSmall: boolean;
+    isPDP: boolean;
     onSelect?: (attributeId: number, name: string, value: string) => void; 
 }
 
@@ -61,7 +63,9 @@ export interface ButtonPropsType {
     cursor?: string;
     margin?: string;
     dataTestId?: string;
+    disabled?: boolean;
 }
+
 
 
 export interface CardPropsType {
@@ -92,11 +96,14 @@ export interface NavbarProps {
     selectedCategory: string;
     totalItemCount: number;
     orderPlaced: boolean;
+    closeCart: () => void;
+    openCart: () => void;
     fetchCategories: () => void;
     setSelectedCategory: (category: string) => void;
     setSelectedCategoryName: (categoryName: string) => void;
     fetchProductsByCategory: (categoryId: string) => void;
     match: { params: { categoryName?: string } }; 
+    showCart: boolean;
   }
   
 export interface CartItemProps {

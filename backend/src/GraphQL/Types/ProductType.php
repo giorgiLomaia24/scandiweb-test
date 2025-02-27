@@ -1,12 +1,13 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\GraphQL\Types;
 
 use App\GraphQL\Resolvers\AttributeResolver;
 use App\GraphQL\Resolvers\PriceResolver;
 use App\Models\Product\AbstractProduct;
+use function PHPSTORM_META\type;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -54,7 +55,11 @@ class ProductType extends ObjectType
                     'type' => Type::string(),
                     'resolve' => fn(AbstractProduct $product): string => $product->getDescription() ?? '',
                 ],
-                'category_id' => Type::int(),
+                'category_id' => [
+                    'type' => Type::int(),
+                    'resolve' => fn(AbstractProduct $product): ?int => $product->getCategoryId(),
+                ],
+
                 'in_stock' => [
                     'type' => Type::boolean(),
                     'resolve' => fn(AbstractProduct $product): bool => $product->canBeSold(),
@@ -62,7 +67,7 @@ class ProductType extends ObjectType
                 'brand' => Type::string(),
                 'gallery' => [
                     'type' => Type::listOf(Type::string()),
-                    'resolve' => fn(AbstractProduct $product): array => $product->getGallery(),
+                    'resolve' => fn(AbstractProduct $product): array=> $product->getGallery(),
                 ],
                 'formatted_price' => [
                     'type' => Type::string(),
@@ -70,11 +75,11 @@ class ProductType extends ObjectType
                 ],
                 'attributes' => [
                     'type' => Type::listOf(AttributeType::getInstance()),
-                    'resolve' => fn(AbstractProduct $product): array => AttributeResolver::resolveAttributes($product),
+                    'resolve' => fn(AbstractProduct $product): array=> AttributeResolver::resolveAttributes($product),
                 ],
                 'price' => [
                     'type' => PriceType::getInstance(),
-                    'resolve' => fn(AbstractProduct $product): array => PriceResolver::resolvePrice($product),
+                    'resolve' => fn(AbstractProduct $product): array=> PriceResolver::resolvePrice($product),
                 ],
             ],
         ]);

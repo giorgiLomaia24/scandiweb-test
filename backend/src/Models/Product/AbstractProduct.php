@@ -25,7 +25,7 @@ abstract class AbstractProduct
         $this->id = $data['id'];
         $this->name = $data['name'];
         $this->description = $data['description'];
-        $this->categoryId = CategoryRepository::getCategoryIdByName($data['category_name']);
+        $this->categoryId = $data['category_id']; 
         $this->inStock = (bool) $data['in_stock'];
         $this->brand = $data['brand'] ?? '';
         $this->gallery = isset($data['gallery']) && is_array($data['gallery']) ? $data['gallery'] : [];

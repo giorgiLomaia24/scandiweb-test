@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\Repositories;
 
@@ -46,7 +46,6 @@ class ProductRepository
 
         $productsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    
         foreach ($productsData as $product) {
             if (!isset($product['id']) || empty($product['id'])) {
                 throw new Exception("ProductRepository Error: Missing `id` in database query.");
@@ -89,7 +88,7 @@ class ProductRepository
      */
     private static function formatProductData(array $data): array
     {
-        $data['description'] = $data['description'] ?? ''; 
+        $data['description'] = $data['description'] ?? '';
 
         $rawGallery = $data['gallery'] ?? '[]';
         $decodedGallery = json_decode($rawGallery, true);
@@ -99,15 +98,21 @@ class ProductRepository
         }
 
         $data['gallery'] = $decodedGallery;
+
         $data['prices'] = [
             [
                 'amount' => $data['amount'],
                 'currency_label' => $data['currency_label'],
                 'currency_symbol' => $data['currency_symbol'],
-            ]
+            ],
         ];
+
         unset($data['amount'], $data['currency_label'], $data['currency_symbol']);
+
+        // ✅ Ensure category_id is included
+        $data['category_id'] = $data['category_id'] ?? null;
 
         return $data;
     }
+
 }

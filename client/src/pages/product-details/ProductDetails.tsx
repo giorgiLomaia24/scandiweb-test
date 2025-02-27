@@ -1,29 +1,29 @@
-import { Component, createRef } from 'react';
-import { connect } from 'react-redux';
-import { useParams } from 'react-router-dom';
-import { RootState } from '../../redux/store';
-import { fetchProductDetails, setPlaceOrder ,setSelectedProduct} from '../../redux/slices/productSlice';
-import { addToCart } from '../../redux/slices/cartSlice';
-import Slider from '../../components/slider/Slider';
-import Attribute from '../../components/attribute/Attribute';
-import ProductImage from '../../components/pproduct-image/ProductImage';
-import Button from '../../components/button/Button';
-import { handleAddToCart } from '../../utils/cartUtils';
-import parse from 'html-react-parser';
-import { ProductDetailsPropsType } from '../../types/propType';
-import { SelectedAttributesType } from '../../types/cartType';
-import ProductDetailsPlaceHolder from '../../placeholders/product/ProductDetailsPlaceHolder';
-import { ProductType } from '../../types/productType';
-import './productDetails.css';
-
+import { Component, createRef } from "react";
+import { connect } from "react-redux";
+import { RootState } from "../../redux/store";
+import { fetchProductDetails, setPlaceOrder, setSelectedProduct } from "../../redux/slices/productSlice";
+import { addToCart, openCart } from "../../redux/slices/cartSlice";
+import Slider from "../../components/slider/Slider";
+import Attribute from "../../components/attribute/Attribute";
+import ProductImage from "../../components/pproduct-image/ProductImage";
+import Button from "../../components/button/Button";
+import { handleAddToCart } from "../../utils/cartUtils";
+import parse from "html-react-parser";
+import { ProductDetailsPropsType } from "../../types/propType";
+import { SelectedAttributesType } from "../../types/cartType";
+import ProductDetailsPlaceHolder from "../../placeholders/product/ProductDetailsPlaceHolder";
+import { ProductType } from "../../types/productType";
+import { withRouter } from "../../utils/withRouter";
+import "./productDetails.css";
 
 interface ProductDetailsState {
   isHorizontal: boolean;
   activeImageIndex: number;
   selectedAttributes: SelectedAttributesType;
+  productState?: ProductType;
 }
 
-export class ProductDetails extends Component<ProductDetailsPropsType, ProductDetailsState> {
+class ProductDetails extends Component<ProductDetailsPropsType, ProductDetailsState> {
   state: ProductDetailsState = {
     isHorizontal: window.innerWidth <= 768,
     activeImageIndex: 0,
@@ -33,45 +33,40 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
   sliderRef = createRef<{ scrollToNext: () => void; scrollToPrev: () => void }>();
 
   componentDidMount() {
+    const { fetchProductDetails, setSelectedProduct, id, products } = this.props;
 
 
-    if (this.props.products.length === 0) {
-      this.props.fetchProductDetails(this.props.id ?? "");
+    if (!id) {
+      return;
+    }
+
+    if (products.length === 0) {
+      fetchProductDetails(id);
     } else {
-      const product = this.props.products.find((p: ProductType) => p.id === this.props.id);
+      const product = products.find((p) => p.id === id);
       if (product) {
-        this.props.setSelectedProduct(product);
+        setSelectedProduct(product);
+      } else {
+        fetchProductDetails(id);
       }
     }
 
-    this.setDefaultAttributes();
     window.addEventListener("resize", this.handleResize);
   }
 
-
   componentDidUpdate(prevProps: ProductDetailsPropsType) {
-    if (prevProps.product !== this.props.product) {
-      this.setDefaultAttributes();
+    const { product } = this.props;
+
+    if (prevProps.product !== product && product) {
+      this.setState({ productState: product });
     }
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener("resize", this.handleResize);
   }
 
-  setDefaultAttributes = () => {
-    const { product } = this.props;
-    if (!product?.attributes) return;
 
-    const defaultAttributes = product.attributes.reduce((acc, attr) => {
-      if (attr.values?.length) {
-        acc[attr.name] = { id: attr.id, value: attr.values[0].value };
-      }
-      return acc;
-    }, {} as SelectedAttributesType);
-
-    this.setState({ selectedAttributes: defaultAttributes });
-  };
 
   handleResize = () => {
     this.setState({ isHorizontal: window.innerWidth <= 1116 });
@@ -85,7 +80,7 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
       (prevState) => ({
         activeImageIndex: (prevState.activeImageIndex + 1) % (product?.gallery.length || 1),
       }),
-      () => window.scrollTo({ top: 0, behavior: 'smooth' })
+      () => window.scrollTo({ top: 0, behavior: "smooth" })
     );
   };
 
@@ -98,7 +93,7 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
         activeImageIndex:
           prevState.activeImageIndex === 0 ? (product?.gallery.length || 1) - 1 : prevState.activeImageIndex - 1,
       }),
-      () => window.scrollTo({ top: 0, behavior: 'smooth' })
+      () => window.scrollTo({ top: 0, behavior: "smooth" })
     );
   };
 
@@ -115,12 +110,19 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
     }));
   };
 
+
+
   addToCart = () => {
-    const { product, addToCart, cartItems, setPlaceOrder } = this.props;
-    if (product.in_stock) {
+
+    const { product, addToCart, cartItems, setPlaceOrder, openCart } = this.props;
+    console.log(product);
+    if (product?.in_stock) {
       handleAddToCart(product, this.state.selectedAttributes, cartItems, addToCart);
     }
     setPlaceOrder(false);
+    openCart();
+    document.body.classList.add('no-scroll');
+    
   };
 
   render() {
@@ -128,12 +130,11 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
     const { isHorizontal, activeImageIndex, selectedAttributes } = this.state;
 
     if (loading) return <ProductDetailsPlaceHolder />;
-    if (error) return <p style={{ margin: '300px auto' }} >{error}</p>;
-    if (!product) return <p style={{ margin: '300px auto' }}>no product this is the error</p>;
-
+    if (error) return <p style={{ margin: "300px auto" }}>{error}</p>;
+    if (!product) return <p style={{ margin: "300px auto" }}>No product found.</p>;
 
     return (
-      <div className='product--details-wrapper'>
+      <div className="product--details-wrapper">
         <Slider
           ref={this.sliderRef}
           images={product.gallery}
@@ -155,6 +156,7 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
 
             {product.attributes && (
               <Attribute
+                isPDP={true}
                 attributes={product.attributes}
                 selectedAttributes={selectedAttributes}
                 isSmall={false}
@@ -173,11 +175,28 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
               onClick={this.addToCart}
               label="ADD TO CART"
               hoverEffect={false}
-              backgroundColor={product.in_stock ? '#5ECE7B' : 'gray'}
-              cursor={product.in_stock ? 'pointer' : 'not-allowed'}
-              margin={isHorizontal ? '15px auto' : ''}
-              dataTestId='add-to-cart'
+              backgroundColor={
+                product?.in_stock &&
+                  product?.attributes?.every((attr) => selectedAttributes[attr.name])
+                  ? "#5ECE7B"
+                  : "gray"
+              }
+              cursor={
+                product?.in_stock &&
+                  product?.attributes?.every((attr) => selectedAttributes[attr.name])
+                  ? "pointer"
+                  : "not-allowed"
+              }
+              margin={isHorizontal ? "15px auto" : ""}
+              dataTestId="add-to-cart"
+              disabled={
+                product?.in_stock === false ||
+                !product?.attributes?.every((attr) => selectedAttributes[attr.name])
+              }
             />
+
+
+
 
             <div className="description" data-testid="product-description">
               {parse(product.description)}
@@ -185,13 +204,12 @@ export class ProductDetails extends Component<ProductDetailsPropsType, ProductDe
           </div>
         </div>
       </div>
-
-
     );
   }
 }
 
-const mapStateToProps = (state: RootState) => ({
+const mapStateToProps = (state: RootState, ownProps: any) => ({
+  id: ownProps.match.params.id,
   product: state.product.selectedProduct,
   products: state.product.products,
   loading: state.product.loading,
@@ -199,13 +217,4 @@ const mapStateToProps = (state: RootState) => ({
   cartItems: state.cart.items,
 });
 
-const ProductDetailsWrapper = (props: Omit<ProductDetailsPropsType, "id">) => {
-  const { id } = useParams<{ id: string }>(); // ✅ Extract product ID from the URL
-  if (!id) return <p>Product ID is missing</p>; // ✅ Handle missing ID
-
-  return <ProductDetails {...props} id={id} />; // ✅ Pass `id` properly
-};
-
-
-
-export default connect(mapStateToProps, { fetchProductDetails, addToCart, setPlaceOrder,setSelectedProduct })(ProductDetailsWrapper);
+export default withRouter(connect(mapStateToProps, { fetchProductDetails, addToCart, setPlaceOrder, setSelectedProduct, openCart })(ProductDetails));

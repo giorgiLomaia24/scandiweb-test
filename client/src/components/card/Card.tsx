@@ -1,6 +1,5 @@
 import { Component } from 'react';
 import { BsCart } from "react-icons/bs";
-import { kebabCase } from 'lodash';
 import { Link } from 'react-router-dom';
 import Button from '../button/Button';
 import { CardPropsType } from '../../types/propType';
@@ -53,7 +52,8 @@ export class Card extends Component<Props> {
 
     render() {
         const { id, imageUrl, name, price, in_stock } = this.props;
-        const kebabCaseName = kebabCase(name);
+        const kebabCaseName = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
 
         return (
             <Link to={`/product/${id}`} className={`card ${!in_stock ? 'out-of-stock' : ''}`} data-testid={`product-${kebabCaseName}`} >
